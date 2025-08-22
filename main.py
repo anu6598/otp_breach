@@ -84,13 +84,15 @@ for i, month in enumerate(available_months):
         month_data = filtered_data[filtered_data['month_name'] == month]
         monthly_otp = month_data.groupby('otp_count')['user_count'].sum().reset_index()
         
+        # Create histogram instead of line chart
         fig = go.Figure()
-        fig.add_trace(go.Scatter(
+        fig.add_trace(go.Bar(
             x=monthly_otp['otp_count'], 
             y=monthly_otp['user_count'],
-            mode='lines+markers',
             name=month,
-            line=dict(width=3)
+            text=monthly_otp['user_count'],
+            textposition='auto',
+            marker_color='skyblue'
         ))
         
         # Add threshold line
@@ -112,11 +114,12 @@ for i, month in enumerate(available_months):
         )
         
         fig.update_layout(
-            title=f"OTP Request Trends - {month}",
+            title=f"OTP Request Distribution - {month}",
             xaxis_title="OTP Count",
             yaxis_title="User Count (Log Scale)",
             yaxis_type="log",
-            height=500
+            height=500,
+            showlegend=False
         )
         
         st.plotly_chart(fig, use_container_width=True)
@@ -128,6 +131,48 @@ for i, month in enumerate(available_months):
         
         st.metric(f"{month} - Users Over Threshold", 
                  f"{month_over_threshold:,} ({month_percent:.2f}%)")
+
+# Additional analysis - Overall histogram
+st.header("Overall OTP Request Distribution")
+overall_otp = filtered_data.groupby('otp_count')['user_count'].sum().reset_index()
+
+fig_overall = go.Figure()
+fig_overall.add_trace(go.Bar(
+    x=overall_otp['otp_count'], 
+    y=overall_otp['user_count'],
+    text=overall_otp['user_count'],
+    textposition='auto',
+    marker_color='lightgreen'
+))
+
+# Add threshold line
+fig_overall.add_shape(
+    type="line",
+    x0=16, y0=0, x1=16, y1=max(overall_otp['user_count']),
+    line=dict(color="red", width=2, dash="dash"),
+)
+
+# Add annotation for threshold
+fig_overall.add_annotation(
+    x=16, y=max(overall_otp['user_count']) * 0.9,
+    text="Current Threshold: 16 OTPs",
+    showarrow=True,
+    arrowhead=1,
+    ax=-50,
+    ay=-30,
+    bgcolor="white"
+)
+
+fig_overall.update_layout(
+    title="Overall OTP Request Distribution",
+    xaxis_title="OTP Count",
+    yaxis_title="User Count (Log Scale)",
+    yaxis_type="log",
+    height=500,
+    showlegend=False
+)
+
+st.plotly_chart(fig_overall, use_container_width=True)
 
 # Additional analysis
 st.header("Threshold Analysis")
